@@ -9,9 +9,10 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 import { Cookie, Refrigerator } from "lucide-react";
 import UserDropdown from "./UserDropdown";
+import { checkUser } from "@/lib/checkUser";
 
-const Header = () => {
-  const user = null; // Replace with actual user fetching logic
+const Header = async() => {
+  const user = await checkUser(); // Replace with actual user fetching logic
   return (
     <header className="fixed top-0 w-full border-b border-stone-200 bg-stone-50/80 backdrop-blur-md z-50 supports-backdrop-filter:bg-stone-50/60">
       <nav className="container mx-auto px-4 h-16 flex justify-between items-center">
