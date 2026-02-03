@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 const STRAPI_URL =
   process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
@@ -15,12 +15,12 @@ export const checkUser = async () => {
     console.log("No Strapi API Token found");
     return null;
   }
-
-  const subscriptionTier = "free";
+  const {has} = await auth();
+  const subscriptionTier = has({plan: "pro"});
 
   try {
     const existingUserResponse = await fetch(
-      `${STRAPI_URL}/api/users?filters[clerkid][$eq]=${user.id}`,
+      `${STRAPI_URL}/api/users?filters[clerkId][$eq]=${user.id}`,
       {
         headers: {
           Authorization: `Bearer ${STRAPI_API_TOKEN}`,
@@ -62,7 +62,7 @@ export const checkUser = async () => {
 
     const rolesData = await roleResponse.json();
     const authenticatedRole = rolesData.roles.find(
-      (role) => role.type === "Authenticated",
+      (role) => role.type === "authenticated",
     );
     if (!authenticatedRole) {
       console.log("Authenticated role not found");
@@ -76,7 +76,7 @@ export const checkUser = async () => {
       confirmed: true,
       blocked: false,
       role: authenticatedRole.id,
-      clerkid: user.id,
+      clerkId: user.id,
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       imageUrl: user.imageUrl || "",
