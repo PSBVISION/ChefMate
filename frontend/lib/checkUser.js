@@ -16,7 +16,7 @@ export const checkUser = async () => {
     return null;
   }
   const {has} = await auth();
-  const subscriptionTier = has({plan: "pro"});
+  const subscriptionTier = has({plan: "pro"}) ? "pro" : "free";
 
   try {
     const existingUserResponse = await fetch(
