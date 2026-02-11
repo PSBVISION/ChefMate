@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 
 const useFetch = (cb) => {
   const [data, setData] = useState(undefined);
@@ -21,7 +22,7 @@ const useFetch = (cb) => {
     }
   };
 
-  return [data, loading, error, fn, setData];
+  return {data, loading, error, fn, setData};
 };
 
 export default useFetch;
