@@ -1,4 +1,4 @@
-"use client";
+
 import useFetch from "@/hooks/use-fetch";
 import { ArrowLeft, Loader } from "lucide-react";
 import Link from "next/link";
