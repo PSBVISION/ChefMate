@@ -15,9 +15,6 @@
       "type": "string",
       "required": true
     },
-    "quantitiy": {
-      "type": "string"
-    },
     "imageUrl": {
       "type": "string"
     },
@@ -26,6 +23,9 @@
       "relation": "manyToOne",
       "target": "plugin::users-permissions.user",
       "inversedBy": "pantry_items"
+    },
+    "quantity": {
+      "type": "string"
     }
   }
 }
