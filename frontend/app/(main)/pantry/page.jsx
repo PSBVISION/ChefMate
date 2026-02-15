@@ -10,13 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
 import {
+  Check,
   ChefHat,
   Edit2,
   Loader,
+  Loader2,
   Package,
   Plus,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -56,20 +59,55 @@ const PantryPage = () => {
     }
   }, [itemsData]);
 
-  useEffect(()=>{
-if(deleteData?.success && !deleting){
-  toast.success("Item removed from pantry")
-  fetchItems();
-}
-  },[deleteData])
+  useEffect(() => {
+    if (deleteData?.success && !deleting) {
+      toast.success("Item removed from pantry");
+      fetchItems();
+    }
+  }, [deleteData]);
 
-  const handleDelete = async(itemId)=>{
-    const formData = new FormData()
+  //After Update, refetch items and reset edit state
+  useEffect(() => {
+    if (updateData?.success && !updating) {
+      toast.success("Item updated successfully");
+      setEditingId(null);
+      fetchItems();
+    }
+  }, [updateData]);
+
+  const handleDelete = async (itemId) => {
+    const formData = new FormData();
     formData.append("itemId", itemId);
-    await deleteItem(formData)
-  }
+    await deleteItem(formData);
+  };
 
-  const handleModalSuccess = (newItems) => {};
+  //handle edit
+  const startEdit = (item) => {
+    setEditingId(item.documentId);
+    setEditValues({
+      name: item.name,
+      quantity: item.quantity,
+    });
+  };
+
+  //save edit
+  const saveEdit = async () => {
+    const formData = new FormData();
+    formData.append("itemId", editingId);
+    formData.append("name", editValues.name);
+    formData.append("quantity", editValues.quantity);
+    await updateItem(formData);
+  };
+
+  //cancel edit
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditValues({ name: "", quantity: "" });
+  };
+
+  const handleModalSuccess = (newItems) => {
+    fetchItems();
+  };
   return (
     <div className="min-h-screen bg-stone-50 pt-24 pb-16 px-4">
       <div className="container mx-auto max-w-5xl">
@@ -186,7 +224,52 @@ if(deleteData?.success && !deleting){
                   className="bg-white p-5 border-2 border-stone-200 hover:border-orange-600 hover:shadow-lg transition-all"
                 >
                   {editingId === item.documentId ? (
-                    <div></div>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editValues.name}
+                        onChange={(e) =>
+                          setEditValues({ ...editValues, name: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border-2 border-stone-200 focus:outline-none focus:border-orange-600 text-sm"
+                        placeholder="Ingredient name"
+                      />
+                      <input
+                        type="text"
+                        value={editValues.quantity}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            quantity: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-stone-200 focus:outline-none focus:border-orange-600 text-sm"
+                        placeholder="Quantity"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={saveEdit}
+                          disabled={updating}
+                          className="flex-1 bg-green-600 hover:bg-green-700 border-2 border-green-700"
+                        >
+                          {updating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={cancelEdit}
+                          disabled={updating}
+                          className="flex-1 border-2 border-stone-900 hover:bg-stone-900 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div>
                       <div className="flex items-start justify-between mb-3">
@@ -214,7 +297,9 @@ if(deleteData?.success && !deleting){
                           </Button>
                         </div>
                       </div>
-                      <div>Added {new Date(item.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-stone-400">
+                        Added {new Date(item.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
                   )}
                 </div>
