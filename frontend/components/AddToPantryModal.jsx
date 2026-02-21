@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Loader, Plus } from "lucide-react";
+import { Camera, Check, Loader, Loader2, Plus, X } from "lucide-react";
 import useFetch from "@/hooks/use-fetch";
 import {
   addPantryItemManually,
@@ -18,6 +18,8 @@ import {
 } from "@/actions/pantry.actions";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import ImageUploader from "./ImageUploader";
+import { Badge } from "./ui/badge";
 const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
   const [activeTab, setActiveTab] = useState("search");
   const [selectedImage, setSelectedImage] = useState(null);
@@ -29,6 +31,15 @@ const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
     data: scanData,
     fn: scanImage,
   } = useFetch(scanPantryImage);
+
+  useEffect(() => {
+    if (scanData?.success && scanData?.ingredients) {
+      setScannedIngredients(scanData.ingredients);
+      toast.success(
+        `Found ${scanData.ingredients.length} ingredients! Review and save to pantry.`,
+      );
+    }
+  }, [scanData]);
 
   // Save scanned items
   const {
@@ -44,7 +55,6 @@ const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
     fn: addManualItem,
   } = useFetch(addPantryItemManually);
 
-  
   const handleClose = () => {
     setActiveTab("scan");
     setSelectedImage(null);
@@ -52,17 +62,22 @@ const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
     setManualItem({ name: "", quantity: "" });
     onClose();
   };
-  useEffect(()=>{
-    if(addData?.success){
+
+  const handleImageSelect = (file) => {
+    setSelectedImage(file);
+    setScannedIngredients([]);
+  };
+  useEffect(() => {
+    if (addData?.success) {
       toast.success("Item added to pantry!");
-      setManualItem({name:"", quantity: ""});
+      setManualItem({ name: "", quantity: "" });
       handleClose();
-      if(onSuccess) onSuccess();
+      if (onSuccess) onSuccess();
     }
-  },[addData])
+  }, [addData]);
   const handleAddManual = async (e) => {
     e.preventDefault();
-    if(!manualItem.name.trim() || !manualItem.quantity.trim()){
+    if (!manualItem.name.trim() || !manualItem.quantity.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -71,6 +86,34 @@ const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
     formData.append("quantity", manualItem.quantity);
     await addManualItem(formData);
   };
+
+  const handleScan = async () => {
+    if (!selectedImage) return;
+    const formData = new FormData();
+    formData.append("image", selectedImage);
+    await scanImage(formData);
+  };
+
+  const handleSaveScanned = async () => {
+    if(scannedIngredients.length === 0){
+      toast.error("No ingredients to save");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("ingredients", JSON.stringify(scannedIngredients));
+    await saveScannedItems(formData);
+  }
+
+  useEffect(()=>{
+    if(saveData?.success){
+      toast.success(saveData.message);
+      handleClose();
+      if(onSuccess) onSuccess();
+    }
+  }, [saveData])
+  const removeIngredient = (index) => {
+    setScannedIngredients(scannedIngredients.filter((_,i)=> i !== index));
+  }
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-none">
@@ -92,9 +135,114 @@ const AddToPantryModal = ({ isOpen, onClose, onSuccess }) => {
               <Plus className="size-4" /> Add Manually
             </TabsTrigger>
           </TabsList>
+          {/* Scan Tab Content */}
           <TabsContent value="scan" className="space-y-6 mt-6">
-            Make changes to your account here.
+            {scannedIngredients.length === 0 ? (
+              <div className="space-y-4">
+                <ImageUploader
+                  onImageSelect={handleImageSelect}
+                  loading={scanning}
+                />
+                {selectedImage && !scanning && (
+                  <Button
+                    onClick={handleScan}
+                    variant="primary"
+                    className="w-full h-12 text-lg"
+                    disabled={scanning}
+                  >
+                    {scanning ? (
+                      <>
+                        <Loader className="w-5 h-5 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-5 h-5 mr-2" />
+                        Scan Image
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-lg text-stone-900">
+                      Scanned Ingredients
+                    </h3>
+                    <p className="text-sm text-stone-600">
+                      {scannedIngredients.length} ingredients found
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setScannedIngredients([]);
+                      setSelectedImage(null);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Camera className="size-4" />
+                    Scan Again
+                  </Button>
+                </div>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {scannedIngredients.map((ingredients, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-4 bg-stone-50 rounded-xl border border-stone-200"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-stone-900">
+                          {ingredients.name}
+                        </div>
+                        <div className="text-sm text-stone-500">
+                          {ingredients.quantity}
+                        </div>
+                      </div>
+                      {ingredients.confidence && (
+                        <Badge
+                          className="text-xs text-green-700 border-green-200"
+                          variant="outline"
+                        >
+                          {Math.round(ingredients.confidence * 100)}%
+                        </Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeIngredient(index)}
+                        className="text-stone-600 hover:text-red-600"
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={handleSaveScanned}
+                  disabled={saving || scannedIngredients.length === 0}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white h-12 w-full"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      Save {scannedIngredients.length} Items to Pantry
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </TabsContent>
+          {/* Manual Tab Content */}
           <TabsContent value="manual" className="mt-6">
             <form className="space-y-4" onSubmit={handleAddManual}>
               <div>

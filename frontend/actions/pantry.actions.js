@@ -3,6 +3,7 @@
 import { freePantryScans, proTierLimit } from "@/lib/arcjet";
 import { checkUser } from "@/lib/checkUser";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { request } from "@arcjet/next";
 
 const STRAPI_URL =
   process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
@@ -133,10 +134,10 @@ export async function saveToPantry(formData) {
             imageUrl: "",
             owner: user.id,}})
       })
-    }
-    if (response.ok) {
-      const data = await response.json();
-      savedItems.push(data.data);
+      if (response.ok) {
+        const data = await response.json();
+        savedItems.push(data.data);
+      }
     }
 
     return {
@@ -210,7 +211,7 @@ export async function getPantryItems() {
     }
 
     const response = await fetch(
-      `${STRAPI_URL}/api/pantry-items?filters[owner][id][$eq]=${user.id}&sort=createdAt:desc`,
+      `${STRAPI_URL}/api/pantry-items?filters[owner][id][$eq]=${user.id}&sort=createdAt:desc&pagination[pageSize]=100`,
       {
         headers: {
           Authorization: `Bearer ${STRAPI_API_TOKEN}`,
