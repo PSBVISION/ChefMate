@@ -19,6 +19,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  UtensilsCrossed,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +31,129 @@ const PantryPage = () => {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({ name: "", quantity: "" });
+  const [failedImages, setFailedImages] = useState(new Set());
+
+  /**
+   * Get TheMealDB ingredient image URL for a given ingredient name.
+   * Strips adjectives/qualifiers and normalizes to match TheMealDB's naming.
+   */
+  const getIngredientImage = (name) => {
+    // Common substitutions for names TheMealDB uses differently
+    const nameMap = {
+      "all-purpose flour": "Plain Flour",
+      "all purpose flour": "Plain Flour",
+      "ap flour": "Plain Flour",
+      "white flour": "Plain Flour",
+      "macaroni and cheese": "Macaroni",
+      "mac and cheese": "Macaroni",
+      "peppercorns": "Pepper",
+      "black peppercorns": "Pepper",
+      "mixed peppercorns": "Pepper",
+      "black pepper": "Pepper",
+      "sea salt": "Salt",
+      "coarse salt": "Salt",
+      "coarse sea salt": "Salt",
+      "kosher salt": "Salt",
+      "table salt": "Salt",
+      "white sugar": "Sugar",
+      "granulated sugar": "Sugar",
+      "white granulated sugar": "Sugar",
+      "caster sugar": "Sugar",
+      "limes": "Lime",
+      "lemons": "Lemon",
+      "eggs": "Eggs",
+      "tomatoes": "Tomatoes",
+      "onions": "Onion",
+      "potatoes": "Potatoes",
+      "carrots": "Carrots",
+      "cloves": "Cloves",
+      "whole cloves": "Cloves",
+      "sesame seeds": "Sesame Seed",
+      "sesame seed": "Sesame Seed",
+      "garlic cloves": "Garlic",
+      "garlic clove": "Garlic",
+      "grapefruit": "Grapefruit",
+      "green cabbage": "Cabbage",
+      "red cabbage": "Red Cabbage",
+      "green apple": "Apples",
+      "green apples": "Apples",
+      "broccoli florets": "Broccoli",
+      "broccoli": "Broccoli",
+      "hazelnuts": "Hazelnuts",
+      "green chili peppers": "Green Chilli",
+      "green chili pepper": "Green Chilli",
+      "green chilies": "Green Chilli",
+      "green chilli": "Green Chilli",
+      "chili peppers": "Red Pepper",
+      "flax seeds": "Flax Seed",
+      "flax seed": "Flax Seed",
+      "flaxseed": "Flax Seed",
+      "salmon fillet": "Salmon",
+      "salmon fillets": "Salmon",
+      "chicken breast": "Chicken Breast",
+      "chicken breasts": "Chicken Breast",
+      "chicken thighs": "Chicken Thighs",
+      "bell pepper": "Red Pepper",
+      "bell peppers": "Red Pepper",
+      "green bell pepper": "Green Pepper",
+      "red bell pepper": "Red Pepper",
+      "yellow bell pepper": "Yellow Pepper",
+      "cherry tomatoes": "Cherry Tomatoes",
+      "spring onions": "Spring Onions",
+      "green onions": "Spring Onions",
+      "olive oil": "Olive Oil",
+      "vegetable oil": "Vegetable Oil",
+      "soy sauce": "Soy Sauce",
+      "brown sugar": "Brown Sugar",
+      "powdered sugar": "Icing Sugar",
+      "confectioners sugar": "Icing Sugar",
+      "baking soda": "Bicarbonate Of Soda",
+      "baking powder": "Baking Powder",
+      "heavy cream": "Heavy Cream",
+      "sour cream": "Sour Cream",
+      "cream cheese": "Cream Cheese",
+      "cheddar cheese": "Cheddar Cheese",
+      "feta cheese": "Feta",
+      "parmesan cheese": "Parmesan",
+      "mozzarella cheese": "Mozzarella",
+    };
+
+    // Adjectives/qualifiers to strip
+    const stripWords = [
+      "fresh", "dried", "dry", "whole", "ground", "coarse", "fine",
+      "raw", "organic", "pure", "extra", "virgin", "large", "small",
+      "medium", "thick", "thin", "light", "dark", "sweet", "unsalted",
+      "salted", "smoked", "roasted", "toasted", "crushed", "minced",
+      "chopped", "sliced", "diced", "frozen", "canned", "packed",
+      "florets", "fillet", "fillets", "boneless", "skinless", "peeled",
+      "grated", "shredded", "cubed", "halved", "pitted", "deseeded",
+      "trimmed", "ripe", "firm", "tender", "baby", "mini", "jumbo",
+    ];
+
+    const lower = name.trim().toLowerCase();
+
+    // Check direct mapping first
+    if (nameMap[lower]) {
+      return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(nameMap[lower])}.png`;
+    }
+
+    // Strip qualifier words
+    let words = lower.split(/\s+/);
+    words = words.filter((w) => !stripWords.includes(w));
+
+    // Check mapping again after stripping
+    const stripped = words.join(" ");
+    if (nameMap[stripped]) {
+      return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(nameMap[stripped])}.png`;
+    }
+
+    // Title-case each word and join with space (TheMealDB format)
+    const formatted = words
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(formatted)}.png`;
+  };
 
   const {
     loading: loadingItems,
@@ -221,10 +345,10 @@ const PantryPage = () => {
               {items.map((item) => (
                 <div
                   key={item.documentId}
-                  className="bg-white p-5 border-2 border-stone-200 hover:border-orange-600 hover:shadow-lg transition-all"
+                  className="bg-white border-2 border-stone-200 hover:border-orange-600 hover:shadow-lg transition-all overflow-hidden"
                 >
                   {editingId === item.documentId ? (
-                    <div className="space-y-3">
+                    <div className="p-5 space-y-3">
                       <input
                         type="text"
                         value={editValues.name}
@@ -272,33 +396,53 @@ const PantryPage = () => {
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg text-stone-900 mb-1">
-                            {item.name}
-                          </h3>
-                          <p className="text-stone-500 text-sm font-light">
-                            {item.quantity}
-                          </p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            onClick={() => startEdit(item)}
-                            variant="ghost"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(item.documentId)}
-                            disabled={deleting}
-                            variant="ghost"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                      {/* Ingredient Image */}
+                      <div className="relative w-full aspect-square bg-stone-50 flex items-center justify-center">
+                        {!failedImages.has(item.documentId) ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={getIngredientImage(item.name)}
+                            alt={item.name}
+                            className="absolute inset-0 w-full h-full object-contain p-4"
+                            onError={() =>
+                              setFailedImages((prev) =>
+                                new Set([...prev, item.documentId])
+                              )
+                            }
+                          />
+                        ) : (
+                          <UtensilsCrossed className="w-12 h-12 text-stone-300" />
+                        )}
                       </div>
-                      <div className="text-xs text-stone-400">
-                        Added {new Date(item.createdAt).toLocaleDateString()}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg text-stone-900 mb-1">
+                              {item.name}
+                            </h3>
+                            <p className="text-stone-500 text-sm font-light">
+                              {item.quantity}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => startEdit(item)}
+                              variant="ghost"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete(item.documentId)}
+                              disabled={deleting}
+                              variant="ghost"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-stone-400">
+                          Added {new Date(item.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   )}

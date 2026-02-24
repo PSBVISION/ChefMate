@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import Image from "next/image";
 import { Button } from "./ui/button";
-import { ChefHat, Clock, Users } from "lucide-react";
+import { ChefHat, Clock, UtensilsCrossed, Users } from "lucide-react";
 import { Badge } from "./ui/badge";
 
 const RecipeCard = ({ recipe, variant = "default" }) => {
@@ -76,76 +76,65 @@ const RecipeCard = ({ recipe, variant = "default" }) => {
   if (variant === "pantry") {
     return (
       <Card className="rounded-none border-stone-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-        {/* Image at top (if available) */}
-        {data.showImage && (
-          <div className="relative aspect-video">
-            <Image
-              src={data.image}
-              alt={data.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-            {/* Match Percentage Badge on Image */}
-            {data.matchPercentage && (
-              <div className="absolute top-4 right-4">
-                <Badge
-                  className={`${
-                    data.matchPercentage >= 90
-                      ? "bg-green-600"
-                      : data.matchPercentage >= 75
-                      ? "bg-orange-600"
-                      : "bg-stone-600"
-                  } text-white text-lg px-3 py-1.5 shadow-lg`}
-                >
-                  {data.matchPercentage}% Match
+        {/* Image / Placeholder at top */}
+        <div className="relative aspect-video">
+          {data.showImage ? (
+            data.image.startsWith("data:") ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={data.image}
+                alt={data.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={data.image}
+                alt={data.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            )
+          ) : (
+            <div className="w-full h-full bg-linear-to-br from-stone-100 to-orange-50 flex flex-col items-center justify-center">
+              <UtensilsCrossed className="w-12 h-12 text-orange-300 mb-2" />
+              <span className="text-sm text-stone-400 font-medium">No image available</span>
+            </div>
+          )}
+          {/* Match Percentage Badge */}
+          {data.matchPercentage && (
+            <div className="absolute top-4 right-4">
+              <Badge
+                className={`${
+                  data.matchPercentage >= 90
+                    ? "bg-green-600"
+                    : data.matchPercentage >= 75
+                    ? "bg-orange-600"
+                    : "bg-stone-600"
+                } text-white text-lg px-3 py-1.5 shadow-lg`}
+              >
+                {data.matchPercentage}% Match
+              </Badge>
+            </div>
+          )}
+          {/* Cuisine & Category badges on image */}
+          {(data.cuisine || data.category) && (
+            <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+              {data.cuisine && (
+                <Badge className="bg-white/90 text-orange-600 backdrop-blur-sm capitalize">
+                  {data.cuisine}
                 </Badge>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+              {data.category && (
+                <Badge className="bg-white/90 text-stone-600 backdrop-blur-sm capitalize">
+                  {data.category}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
 
         <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {data.cuisine && (
-                  <Badge
-                    variant="outline"
-                    className="text-orange-600 border-orange-200 capitalize"
-                  >
-                    {data.cuisine}
-                  </Badge>
-                )}
-                {data.category && (
-                  <Badge
-                    variant="outline"
-                    className="text-stone-600 border-stone-200 capitalize"
-                  >
-                    {data.category}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            {/* Match Percentage Badge (if no image) */}
-            {!data.showImage && data.matchPercentage && (
-              <div className="flex flex-col items-end gap-1">
-                <Badge
-                  className={`${
-                    data.matchPercentage >= 90
-                      ? "bg-green-600"
-                      : data.matchPercentage >= 75
-                      ? "bg-orange-600"
-                      : "bg-stone-600"
-                  } text-white text-lg px-3 py-1`}
-                >
-                  {data.matchPercentage}%
-                </Badge>
-                <span className="text-xs text-stone-500">Match</span>
-              </div>
-            )}
-          </div>
-
           <CardTitle className="text-2xl font-serif font-bold text-stone-900">
             {data.title}
           </CardTitle>

@@ -12,6 +12,126 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+/**
+ * Discover which image-generation model is available for this API key.
+ * Caches the result in a module-level variable.
+ */
+let _cachedImageModel = undefined; // undefined = not checked yet, null = none found
+
+async function discoverImageModel() {
+  if (_cachedImageModel !== undefined) return _cachedImageModel;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}&pageSize=200`,
+    );
+    if (!res.ok) {
+      _cachedImageModel = null;
+      return null;
+    }
+    const data = await res.json();
+    const models = data.models || [];
+
+    // Strategy 1: find a generateContent model that supports image output
+    // (names typically contain "image-generation")
+    for (const m of models) {
+      if (
+        m.supportedGenerationMethods?.includes("generateContent") &&
+        (m.name?.includes("image") ||
+          m.description?.toLowerCase()?.includes("image generation"))
+      ) {
+        const name = m.name.replace("models/", "");
+        _cachedImageModel = { name, method: "generateContent" };
+        return _cachedImageModel;
+      }
+    }
+
+    // Strategy 2: find an Imagen model (uses predict endpoint)
+    for (const m of models) {
+      if (m.name?.includes("imagen")) {
+        const name = m.name.replace("models/", "");
+        const method = m.supportedGenerationMethods?.includes("predict")
+          ? "predict"
+          : "generateImages";
+        console.log(`Discovered Imagen model: ${name} (method: ${method})`);
+        _cachedImageModel = { name, method };
+        return _cachedImageModel;
+      }
+    }
+
+    console.warn(
+      "No image generation models found. Available models:",
+      models.map((m) => m.name).join(", "),
+    );
+    _cachedImageModel = null;
+    return null;
+  } catch (err) {
+    console.error("Failed to list models:", err.message);
+    _cachedImageModel = null;
+    return null;
+  }
+}
+
+/**
+ * Generate a food image using the best available Gemini image model.
+ * Returns a base64 data URL or null on failure.
+ */
+async function generateRecipeImage(title, cuisine) {
+  const imageModel = await discoverImageModel();
+  if (!imageModel) return null;
+
+  const prompt = `Professional food photography of "${title}" (${cuisine || "international"} cuisine). Beautifully plated, soft natural lighting, top-down or 45 degree angle, no text, no watermarks.`;
+
+  try {
+    if (imageModel.method === "generateContent") {
+      // Gemini-style model with inline image response
+      const model = genAI.getGenerativeModel({
+        model: imageModel.name,
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+        },
+      });
+      const result = await model.generateContent(prompt);
+      const parts =
+        result.response.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    } else {
+      // Imagen-style model using REST predict/generateImages endpoint
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${imageModel.name}:${imageModel.method}?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instances: [{ prompt }],
+            parameters: { sampleCount: 1, aspectRatio: "16:9" },
+          }),
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const prediction = data.predictions?.[0];
+        if (prediction?.bytesBase64Encoded) {
+          return `data:${prediction.mimeType || "image/png"};base64,${prediction.bytesBase64Encoded}`;
+        }
+      } else {
+        console.error(
+          `Imagen ${imageModel.method} failed:`,
+          await res.text(),
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Image generation error for", title, ":", error.message);
+  }
+
+  return null;
+}
+
 export async function getRecipesByPantryIngredients(formData) {
   try {
     const user = await checkUser();
@@ -98,9 +218,21 @@ Rules:
         "Failed to generate recipe suggestions. Please try again.",
       );
     }
+
+    // Generate food images using Gemini in parallel for all recipe suggestions
+    const recipesWithImages = await Promise.all(
+      recipeSuggestions.map(async (recipe) => {
+        const imageUrl = await generateRecipeImage(
+          recipe.title,
+          recipe.cuisine,
+        );
+        return { ...recipe, imageUrl };
+      }),
+    );
+
     return {
       success: true,
-      recipes: recipeSuggestions,
+      recipes: recipesWithImages,
       ingredientsUsed: ingredients,
       recommendationsLimit: isPro ? "unlimited" : 5,
       message: `Found ${recipeSuggestions.length} recipes you can make!`,
