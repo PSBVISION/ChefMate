@@ -12,6 +12,13 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+function normalizeTitle(title) {
+  return title
+    .trim()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
 /**
  * Discover which image-generation model is available for this API key.
  * Caches the result in a module-level variable.
@@ -92,8 +99,7 @@ async function generateRecipeImage(title, cuisine) {
         },
       });
       const result = await model.generateContent(prompt);
-      const parts =
-        result.response.candidates?.[0]?.content?.parts || [];
+      const parts = result.response.candidates?.[0]?.content?.parts || [];
       for (const part of parts) {
         if (part.inlineData) {
           return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
@@ -119,10 +125,7 @@ async function generateRecipeImage(title, cuisine) {
           return `data:${prediction.mimeType || "image/png"};base64,${prediction.bytesBase64Encoded}`;
         }
       } else {
-        console.error(
-          `Imagen ${imageModel.method} failed:`,
-          await res.text(),
-        );
+        console.error(`Imagen ${imageModel.method} failed:`, await res.text());
       }
     }
   } catch (error) {
@@ -245,3 +248,81 @@ Rules:
     };
   }
 }
+
+//helper function to fetch image from unsplash
+async function fetchRecipeImage(recipeName) {}
+
+//get or generate recipe details
+export async function getOrGenerateRecipeDetails(formData) {
+  try {
+    const user = await checkUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    const recipeName = formData.get("recipeName");
+    if (!recipeName) {
+      throw new Error("Recipe name is required");
+    }
+
+    //Normalize the title (e.g., "apple cake" -> "Apple Cake") for better matching
+    const normalizedTitle = normalizedTitle(recipeName);
+  } catch (error) {
+    console.error("Error in getOrGenerateRecipeDetails:", error);
+    throw new Error(
+      error.message || "An error occurred while fetching recipe details.",
+    );
+  }
+}
+
+//save recipe to user's collection(bookmark)
+export async function saveRecipeToCollection(formData) {
+  try {
+    const user = await checkUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    const recipeId = formData.get("recipeId");
+    if (!recipeId) {
+      throw new Error("Recipe ID is required");
+    }
+    //check if recipe already exists in user's collection
+    const existingResponse = await fetch(
+      `${STRAPI_URL}/api/saved-recipes?filters[user][id][$eq]=${user.id}&filters[recipe][id][$eq]=${recipeId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+        },
+        cache: "no-store",
+      },
+    );
+    if (existingResponse.ok) {
+      const existingData = await existingResponse.json();
+      if (existingData.data && existingData.data.length > 0) {
+        return {
+          success: true,
+          alreadySaved: true,
+          message: "Recipe already in your collection",
+        };
+      }
+    }
+
+    //save recipe to strapi
+    const saveResponse = await fetch(`${STRAPI_URL}/api/saved-recipes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+      },
+      body: JSON.stringify({
+        data: {
+          user: user.id,
+          recipe: recipeId,
+          savedAt: new Date().toISOString(),
+        },
+      }),
+    });
+  } catch (error) {}
+}
+
+//remove recipe from user's collection(bookmark)
+export async function removeRecipeFromCollection(formData) {}

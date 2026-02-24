@@ -11,7 +11,7 @@ const UserDropdown = () => {
         <UserButton.Link
           label="My Recipes"
           labelIcon={<Cookie size={16} />}
-          href="/recipes"
+          href="/pantry/recipes"
         />
         <UserButton.Link
           label="My Pantry"

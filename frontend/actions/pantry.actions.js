@@ -203,6 +203,123 @@ export async function addPantryItemManually(formData) {
 }
 
 
+/**
+ * Get TheMealDB ingredient image URL for a given ingredient name.
+ * Strips adjectives/qualifiers and normalizes to match TheMealDB's naming.
+ */
+function getIngredientImageUrl(name) {
+  const nameMap = {
+    "all-purpose flour": "Plain Flour",
+    "all purpose flour": "Plain Flour",
+    "ap flour": "Plain Flour",
+    "white flour": "Plain Flour",
+    "macaroni and cheese": "Macaroni",
+    "mac and cheese": "Macaroni",
+    "peppercorns": "Pepper",
+    "black peppercorns": "Pepper",
+    "mixed peppercorns": "Pepper",
+    "black pepper": "Pepper",
+    "sea salt": "Salt",
+    "coarse salt": "Salt",
+    "coarse sea salt": "Salt",
+    "kosher salt": "Salt",
+    "table salt": "Salt",
+    "white sugar": "Sugar",
+    "granulated sugar": "Sugar",
+    "white granulated sugar": "Sugar",
+    "caster sugar": "Sugar",
+    "limes": "Lime",
+    "lemons": "Lemon",
+    "eggs": "Eggs",
+    "tomatoes": "Tomatoes",
+    "onions": "Onion",
+    "potatoes": "Potatoes",
+    "carrots": "Carrots",
+    "cloves": "Cloves",
+    "whole cloves": "Cloves",
+    "sesame seeds": "Sesame Seed",
+    "sesame seed": "Sesame Seed",
+    "garlic cloves": "Garlic",
+    "garlic clove": "Garlic",
+    "grapefruit": "Grapefruit",
+    "green cabbage": "Cabbage",
+    "red cabbage": "Red Cabbage",
+    "green apple": "Apples",
+    "green apples": "Apples",
+    "broccoli florets": "Broccoli",
+    "broccoli": "Broccoli",
+    "hazelnuts": "Hazelnuts",
+    "green chili peppers": "Green Chilli",
+    "green chili pepper": "Green Chilli",
+    "green chilies": "Green Chilli",
+    "green chilli": "Green Chilli",
+    "chili peppers": "Red Pepper",
+    "flax seeds": "Flax Seed",
+    "flax seed": "Flax Seed",
+    "flaxseed": "Flax Seed",
+    "salmon fillet": "Salmon",
+    "salmon fillets": "Salmon",
+    "chicken breast": "Chicken Breast",
+    "chicken breasts": "Chicken Breast",
+    "chicken thighs": "Chicken Thighs",
+    "bell pepper": "Red Pepper",
+    "bell peppers": "Red Pepper",
+    "green bell pepper": "Green Pepper",
+    "red bell pepper": "Red Pepper",
+    "yellow bell pepper": "Yellow Pepper",
+    "cherry tomatoes": "Cherry Tomatoes",
+    "spring onions": "Spring Onions",
+    "green onions": "Spring Onions",
+    "olive oil": "Olive Oil",
+    "vegetable oil": "Vegetable Oil",
+    "soy sauce": "Soy Sauce",
+    "brown sugar": "Brown Sugar",
+    "powdered sugar": "Icing Sugar",
+    "confectioners sugar": "Icing Sugar",
+    "baking soda": "Bicarbonate Of Soda",
+    "baking powder": "Baking Powder",
+    "heavy cream": "Heavy Cream",
+    "sour cream": "Sour Cream",
+    "cream cheese": "Cream Cheese",
+    "cheddar cheese": "Cheddar Cheese",
+    "feta cheese": "Feta",
+    "parmesan cheese": "Parmesan",
+    "mozzarella cheese": "Mozzarella",
+  };
+
+  const stripWords = [
+    "fresh", "dried", "dry", "whole", "ground", "coarse", "fine",
+    "raw", "organic", "pure", "extra", "virgin", "large", "small",
+    "medium", "thick", "thin", "light", "dark", "sweet", "unsalted",
+    "salted", "smoked", "roasted", "toasted", "crushed", "minced",
+    "chopped", "sliced", "diced", "frozen", "canned", "packed",
+    "florets", "fillet", "fillets", "boneless", "skinless", "peeled",
+    "grated", "shredded", "cubed", "halved", "pitted", "deseeded",
+    "trimmed", "ripe", "firm", "tender", "baby", "mini", "jumbo",
+  ];
+
+  const lower = name.trim().toLowerCase();
+
+  if (nameMap[lower]) {
+    return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(nameMap[lower])}.png`;
+  }
+
+  let words = lower.split(/\s+/);
+  words = words.filter((w) => !stripWords.includes(w));
+
+  const stripped = words.join(" ");
+  if (nameMap[stripped]) {
+    return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(nameMap[stripped])}.png`;
+  }
+
+  const formatted = words
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+  return `https://www.themealdb.com/images/ingredients/${encodeURIComponent(formatted)}.png`;
+}
+
+
 export async function getPantryItems() {
   try {
     const user = await checkUser();
@@ -225,12 +342,17 @@ export async function getPantryItems() {
     }
 
     const data = await response.json();
-
     const isPro = user.subscriptionTier === "pro";
+
+    // Attach ingredient image URL to each item
+    const items = (data.data || []).map((item) => ({
+      ...item,
+      imageUrl: getIngredientImageUrl(item.name),
+    }));
 
     return {
       success: true,
-      items: data.data || [],
+      items,
       scansLimit: isPro ? "unlimited" : 10,
     };
   } catch (error) {
