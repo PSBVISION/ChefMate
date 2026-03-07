@@ -7,9 +7,9 @@ import {
 } from "@/actions/recipe.action";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
-import { AlertCircle, Loader } from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { ClockLoader } from "react-spinners";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 function RecipeContent() {
   const searchParams = useSearchParams();
   const recipeName = searchParams.get("cook");
+  const router = useRouter();
 
   const [recipe, setRecipe] = useState(null);
   const [recipeId, setRecipeId] = useState(null);
@@ -126,17 +127,34 @@ function RecipeContent() {
           <p className="text-stone-600 mb-6 font-light">
             Something went wrong while loading the recipe. Please try again.
           </p>
+          <div className="flex gap-3 justify-center">
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              className="border-2 border-stone-900 hover:bg-stone-900 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
+            </Button>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Retry
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
   return (
     <div className="min-h-screen bg-stone-50 pt-24 pb-16 px-4">
-      <div className="container mx-auto max-w-4xl text-center">
-        <h1 className="text-3xl font-bold text-stone-900 mb-4">{recipeName}</h1>
-        <p className="text-stone-600">
-          This is the recipe page for {recipeName}
-        </p>
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-stone-600 hover:text-orange-600 transition-colors mb-6 font-medium">
+            <ArrowLeft className="size-4" /> Back to Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );
