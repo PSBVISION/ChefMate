@@ -266,6 +266,7 @@ export async function getOrGenerateRecipe(formData) {
 
     //Normalize the title (e.g., "apple cake" -> "Apple Cake") for better matching
     const normalizedTitle = normalizedTitle(recipeName);
+    
   } catch (error) {
     console.error("Error in getOrGenerateRecipeDetails:", error);
     throw new Error(
