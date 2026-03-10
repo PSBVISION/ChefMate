@@ -16,10 +16,15 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
+  CheckCircle2,
   ChefHat,
+  Clock,
+  Download,
   Flame,
+  Lightbulb,
   Loader,
   Loader2,
+  Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -89,7 +94,7 @@ function RecipeContent() {
   };
 
   //fetch recipe data when component mounts
-  useFetch(() => {
+  useEffect(() => {
     if (recipeName && !recipe) {
       const formData = new FormData();
       formData.append("recipeName", recipeName);
@@ -133,7 +138,7 @@ function RecipeContent() {
     );
   }
 
-  if (loadingRecipe === null || loadingRecipe) {
+  if (loadingRecipe === null || loadingRecipe || !recipe) {
     return (
       <div className="min-h-screen bg-stone-50 pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-4xl text-center py-20">
