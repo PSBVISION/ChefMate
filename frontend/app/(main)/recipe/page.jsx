@@ -299,7 +299,7 @@ function RecipeContent() {
                     className="border-2 border-orange-600 text-orange-700 hover:bg-orange-50 gap-2"
                     disabled={loading}
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="size-4" />
                     {loading ? "Preparing PDF..." : "Download PDF"}
                   </Button>
                 )}
