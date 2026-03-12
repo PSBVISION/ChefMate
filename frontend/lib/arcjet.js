@@ -12,7 +12,7 @@ export const aj = arcjet({
     // Bot protection - allow search engines only
     detectBot({
       mode: "LIVE",
-      allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"], // Allow known good bots
+      allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW", "VERCEL_BOT_NAME"], // Allow known good bots
     }),
   ],
 });
