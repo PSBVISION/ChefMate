@@ -12,7 +12,7 @@ const isProtectedRoute = createRouteMatcher([
 export default clerkMiddleware(async(auth, req)=>{
 
   const decision = await aj.protect(req);
-  if(decision.isDenied){
+  if (decision.isDenied()) {
 return NextResponse.json({error: "Forbidden"},{status: 403})
   }
 
