@@ -7,6 +7,7 @@ import UserDropdown from "./UserDropdown";
 import { checkUser } from "@/lib/checkUser";
 import PricingModal from "./PricingModal";
 import { Badge } from "./ui/badge";
+import HowToCookModal from "./HowToCookModal";
 
 const Header = async () => {
   const user = await checkUser(); // Replace with actual user fetching logic
@@ -22,7 +23,7 @@ const Header = async () => {
         </Link>
         <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-stone-600">
           <Link
-            href="/pantry/recipes"
+            href="/recipes"
             className="hover:text-orange-600 transition-colors flex gap-1.5 items-center"
           >
             <Cookie className="w-4 h-4" />
@@ -38,6 +39,7 @@ const Header = async () => {
         </div>
         <div className="flex items-center space-x-4">
           <SignedIn>
+            <HowToCookModal/>
             {user && (
               <PricingModal subscriptionTier={user.subscriptionTier}>
                 <Badge variant="outline"

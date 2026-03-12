@@ -289,9 +289,11 @@ function RecipeContent() {
               </Button>
               <PDFDownloadLink
                 document={<RecipePDF recipe={recipe} />}
-                fileName={`${recipe.title
-                  .replace(/\s+/g, "-")
-                  .toLowerCase()}.pdf`}
+                fileName={`ChefMate-${
+                  recipe.title
+                    .replace(/\s+/g, "-") 
+                    .replace(/^./, (str) => str.toUpperCase()) 
+                }.pdf`}
               >
                 {({ loading }) => (
                   <Button
@@ -338,7 +340,7 @@ function RecipeContent() {
                         className="flex justify-between items-start gap-2 text-stone-700 py-2 border-b border-stone-100 last:border-0"
                       >
                         <span className="flex-1">{ingredient.item}</span>
-                        <span className="font-bold text-orange-600 text-sm whitespace-nowrap">
+                        <span className="font-bold text-orange-600 text-sm whitespace-pre-wrap text-right">
                           {ingredient.amount}
                         </span>
                       </li>
@@ -364,8 +366,8 @@ function RecipeContent() {
                     lockText="Nutrition info is Pro-only"
                   >
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-orange-50 p-3 text-center border-2 border-orange-100">
-                        <div className="text-2xl font-bold text-orange-600">
+                      <div className="bg-orange-50 py-3 px-1 text-center border-2 border-orange-100 rounded-lg overflow-hidden">
+                        <div className="text-base sm:text-base font-bold text-orange-600  wrap-break-word">
                           {recipe.nutrition.calories}
                         </div>
                         <div className="text-xs text-stone-500 font-bold uppercase tracking-wide">
@@ -373,8 +375,8 @@ function RecipeContent() {
                         </div>
                       </div>
 
-                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100">
-                        <div className="text-2xl font-bold text-stone-900">
+                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100 rounded-lg overflow-hidden">
+                        <div className="text-base font-bold text-stone-900 wrap-break-word">
                           {recipe.nutrition.protein}
                         </div>
                         <div className="text-xs text-stone-500 font-bold uppercase tracking-wide">
@@ -382,8 +384,8 @@ function RecipeContent() {
                         </div>
                       </div>
 
-                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100">
-                        <div className="text-2xl font-bold text-stone-900">
+                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100 rounded-lg overflow-hidden">
+                        <div className="text-base font-bold text-stone-900 wrap-break-word">
                           {recipe.nutrition.carbs}
                         </div>
                         <div className="text-xs text-stone-500 font-bold uppercase tracking-wide">
@@ -391,8 +393,8 @@ function RecipeContent() {
                         </div>
                       </div>
 
-                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100">
-                        <div className="text-2xl font-bold text-stone-900">
+                      <div className="bg-stone-50 p-3 text-center border-2 border-stone-100 rounded-lg overflow-hidden">
+                        <div className="text-base font-bold text-stone-900 wrap-break-word">
                           {recipe.nutrition.fat}
                         </div>
                         <div className="text-xs text-stone-500 font-bold uppercase tracking-wide">

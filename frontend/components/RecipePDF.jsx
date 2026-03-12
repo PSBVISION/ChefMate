@@ -147,11 +147,13 @@ const styles = StyleSheet.create({
   ingredientItem: {
     fontSize: 10,
     color: STONE_700,
-    maxWidth: "60%",
+    width: "55%",
+    paddingRight: 6,
   },
   ingredientAmount: {
     fontSize: 10,
     color: STONE_500,
+    width: "45%",
     textAlign: "right",
   },
   /* Instructions */
